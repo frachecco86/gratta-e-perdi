@@ -8,35 +8,36 @@
 
   let {
     theme = "silver",
-    label = "GRATTA QUI",
     threshold = 0.55,
     targets = null,
     disabled = false,
     onprogress,
     oncomplete,
+    revealed = $bindable(false),
     children,
   } = $props();
 
-  const COVERS = {
-    silver: { base: ["#eef0f3", "#b7bbc1", "#ffffff", "#83878d"], money: true },
-    gold: { base: ["#ffe49b", "#c9952c", "#fff3cc", "#835a0f"], money: true },
-    blue: { base: ["#cdeefb", "#57a6c6", "#ecfaff", "#2b7595"], money: false },
+  const KIND = {
+    winning: "coin",
+    yours: "banknote",
+    symbols: "sea",
+  };
+
+  const THEME_FOIL = {
+    silver: ["#eef0f3", "#a9adb4", "#ffffff", "#7d818a"],
+    gold: ["#ffe49b", "#c9952c", "#fff3cc", "#835a0f"],
+    blue: ["#d8f2fc", "#5aa9c8", "#f0fbff", "#2b7595"],
   };
 
   let wrap = $state(null);
   let canvas = $state(null);
 
-  let revealed = $state(false);
   let progress = $state(0);
   let drawing = $state(false);
   let pointer = $state({ x: 0, y: 0 });
 
   let ctx = null;
-  let cells = null;
-  let cols = 0;
-  let rows = 0;
-  let cell = 16;
-  let marked = 0;
+  let zones = [];
   let last = null;
   let ready = false;
   let dpr = 1;
@@ -50,14 +51,46 @@
     canvas.width = Math.round(rect.width * dpr);
     canvas.height = Math.round(rect.height * dpr);
     ctx = canvas.getContext("2d");
-    cell = Math.max(11, Math.round(13 * dpr));
-    cols = Math.ceil(canvas.width / cell);
-    rows = Math.ceil(canvas.height / cell);
-    cells = new Uint8Array(cols * rows);
-    marked = 0;
     progress = 0;
-    drawFoil(sampleTargets());
+    buildZones();
+    drawFoil();
     ready = true;
+  }
+
+  // Ogni casella del biglietto diventa una zona grattabile indipendente,
+  // con la sua griglia di copertura e il suo simbolo (moneta/mazzetta/simbolo).
+  function buildZones() {
+    const base = wrap.getBoundingClientRect();
+    const cellSize = Math.max(10, Math.round(11 * dpr));
+    zones = [];
+    if (!targets) return;
+
+    for (const grp of targets) {
+      const kind = KIND[grp.key] || "coin";
+      wrap.querySelectorAll(grp.selector).forEach((el) => {
+        const r = el.getBoundingClientRect();
+        const pad = 2 * dpr;
+        const x = (r.left - base.left - pad) * dpr;
+        const y = (r.top - base.top - pad) * dpr;
+        const w = (r.width + pad * 2) * dpr;
+        const h = (r.height + pad * 2) * dpr;
+        const cols = Math.max(3, Math.ceil(w / cellSize));
+        const rows = Math.max(3, Math.ceil(h / cellSize));
+        zones.push({
+          x,
+          y,
+          w,
+          h,
+          r: Math.min(w, h) * 0.16,
+          cols,
+          rows,
+          cells: new Uint8Array(cols * rows),
+          marked: 0,
+          kind,
+          sym: el.dataset.sym || el.textContent.trim(),
+        });
+      });
+    }
   }
 
   function rr(g, x, y, w, h, r) {
@@ -98,17 +131,6 @@
     g.restore();
   }
 
-  function drawDollar(g, x, y, size, rot) {
-    g.save();
-    g.translate(x, y);
-    g.rotate(rot);
-    g.fillStyle = "rgba(24,104,58,0.9)";
-    g.font = `900 ${Math.round(size)}px system-ui, sans-serif`;
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillText("$", 0, 0);
-    g.restore();
-  }
 
   function drawBanknote(g, x, y, w, h, rot) {
     g.save();
@@ -133,22 +155,6 @@
     g.restore();
   }
 
-  function drawWaveLine(g, y, w, amp, step, alpha) {
-    g.save();
-    g.globalAlpha = alpha;
-    g.lineWidth = Math.max(1.5, 2.4 * dpr);
-    g.strokeStyle = "#ffffff";
-    for (let k = 0; k < 3; k++) {
-      g.beginPath();
-      for (let x = -20; x <= w + 20; x += step) {
-        const yy = y + k * 7 * dpr + Math.sin(x / (26 * dpr) + k) * amp;
-        if (x <= -20 + step) g.moveTo(x, yy);
-        else g.lineTo(x, yy);
-      }
-      g.stroke();
-    }
-    g.restore();
-  }
 
   function drawAnchor(g, x, y, s, rot) {
     g.save();
@@ -244,183 +250,91 @@
     g.restore();
   }
 
-  function sampleTargets() {
-    if (!targets || !wrap) return null;
-    const base = wrap.getBoundingClientRect();
-    const out = { winning: [], yours: [], symbols: [] };
-    for (const grp of targets) {
-      const els = wrap.querySelectorAll(grp.selector);
-      els.forEach((el) => {
-        const r = el.getBoundingClientRect();
-        (out[grp.key] || (out[grp.key] = [])).push({
-          x: (r.left - base.left) * dpr,
-          y: (r.top - base.top) * dpr,
-          w: r.width * dpr,
-          h: r.height * dpr,
-          sym: el.dataset.sym || el.textContent.trim(),
-        });
-      });
+
+  // ---- copertura: un simbolo per ogni cella, dentro la sua zona ----
+  function drawCoinTile(cx, cy, tw, th) {
+    drawCoin(ctx, cx, cy, Math.min(tw, th) * 0.42);
+  }
+
+  function drawBanknoteTile(cx, cy, tw, th) {
+    const bw = tw * 0.96;
+    const bh = th * 0.6;
+    for (let i = -1; i <= 1; i++) {
+      drawBanknote(ctx, cx, cy + i * th * 0.11, bw, bh, i * 0.06);
     }
-    return out;
   }
 
-  // ---- copertine allineate 1:1 alle celle del tagliando ----
-  // Ogni simbolo e' centrato esattamente sulla propria cella: nessun
-  // sparpagliamento, la copertura combacia con quello che c'e' sotto.
-  function fillTile(x, y, w, h, fn) {
-    const pad = Math.min(w, h) * 0.06;
-    fn(x + w / 2, y + h / 2, w - pad * 2, h - pad * 2);
+  function drawSeaTile(cx, cy, tw, th, sym) {
+    const s = Math.min(tw, th) * 0.78;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${Math.round(s)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", system-ui, sans-serif`;
+    ctx.fillText(sym || "⭐", cx, cy + s * 0.04);
+    ctx.restore();
   }
 
-  function coinTile(x, y, w, h) {
-    fillTile(x, y, w, h, (cx, cy, tw, th) =>
-      drawCoin(ctx, cx, cy, Math.min(tw, th) * 0.36)
-    );
-  }
-
-  function banknoteTile(x, y, w, h) {
-    fillTile(x, y, w, h, (cx, cy, tw, th) => {
-      const bw = tw * 0.96;
-      const bh = th * 0.6;
-      // mazzetta di banconote impilate, centrata nella cella
-      for (let i = -1; i <= 1; i++) {
-        drawBanknote(ctx, cx, cy + i * th * 0.11, bw, bh, i * 0.06);
-      }
-    });
-  }
-
-  function seaTile(x, y, w, h, sym) {
-    fillTile(x, y, w, h, (cx, cy, tw, th) => {
-      const s = Math.min(tw, th) * 0.38;
-      if (sym === "⚓") drawAnchor(ctx, cx, cy, s, 0);
-      else if (sym === "⛵") drawSail(ctx, cx, cy, s, 0);
-      else if (sym === "⭐")
-        drawStar(ctx, cx, cy, s * 0.9, 0, "rgba(255,255,255,0.95)");
-      else drawCoin(ctx, cx, cy, s * 0.95);
-    });
-  }
-
-  function drawMoneyCover(w, h, layout) {
-    for (const c of layout?.winning || []) coinTile(c.x, c.y, c.w, c.h);
-    for (const c of layout?.yours || []) banknoteTile(c.x, c.y, c.w, c.h);
-  }
-
-  function drawSeaCover(w, h, layout) {
-    for (let i = 0; i < 6; i++) {
-      drawWaveLine(ctx, h * (0.1 + i * 0.16), w, 5 * dpr, 6 * dpr, 0.26);
-    }
-    for (const c of layout?.symbols || []) seaTile(c.x, c.y, c.w, c.h, c.sym);
-  }
-
-  function drawFoil(layout) {
-    if (!ctx || !canvas) return;
-    const w = canvas.width;
-    const h = canvas.height;
-    const pal = COVERS[theme] || COVERS.silver;
-    const g = ctx;
-
-    g.globalCompositeOperation = "source-over";
-    g.clearRect(0, 0, w, h);
-
-    const bg = g.createLinearGradient(0, 0, w, h);
-    bg.addColorStop(0, pal.base[0]);
-    bg.addColorStop(0.42, pal.base[1]);
-    bg.addColorStop(0.58, pal.base[2]);
-    bg.addColorStop(1, pal.base[3]);
-    g.fillStyle = bg;
-    g.fillRect(0, 0, w, h);
-
-    if (pal.money) drawMoneyCover(w, h, layout);
-    else drawSeaCover(w, h, layout);
+  function fillZone(g, z) {
+    const cw = z.w / z.cols;
+    const ch = z.h / z.rows;
 
     g.save();
-    g.globalAlpha = 0.08;
+    rr(g, z.x, z.y, z.w, z.h, z.r);
+    g.clip();
+
+    // fondo metalizzato della graffetta
+    const pal = THEME_FOIL[theme] || THEME_FOIL.silver;
+    const lg = g.createLinearGradient(z.x, z.y, z.x + z.w, z.y + z.h);
+    lg.addColorStop(0, pal[0]);
+    lg.addColorStop(0.45, pal[1]);
+    lg.addColorStop(0.6, pal[2]);
+    lg.addColorStop(1, pal[3]);
+    g.fillStyle = lg;
+    g.fillRect(z.x, z.y, z.w, z.h);
+
+    g.globalAlpha = 0.09;
     g.fillStyle = "#ffffff";
-    const band = Math.max(14, 20 * dpr);
-    for (let x = -h; x < w; x += band * 2.6) {
+    const band = Math.max(10, 14 * dpr);
+    for (let x = z.x - z.h; x < z.x + z.w; x += band * 2.6) {
       g.beginPath();
-      g.moveTo(x, 0);
-      g.lineTo(x + h, h);
-      g.lineTo(x + h + band, h);
-      g.lineTo(x + band, 0);
+      g.moveTo(x, z.y);
+      g.lineTo(x + z.h, z.y + z.h);
+      g.lineTo(x + z.h + band, z.y + z.h);
+      g.lineTo(x + band, z.y);
       g.closePath();
       g.fill();
     }
+    g.globalAlpha = 1;
+
+    // il simbolo, centrato nella zona
+    const cx = z.x + z.w / 2;
+    const cy = z.y + z.h / 2;
+    const tw = z.w * 0.86;
+    const th = z.h * 0.86;
+    if (z.kind === "coin") drawCoinTile(cx, cy, tw, th);
+    else if (z.kind === "banknote") drawBanknoteTile(cx, cy, tw, th);
+    else drawSeaTile(cx, cy, tw, th, z.sym);
+
     g.restore();
 
+    // bordo della casella, ben visibile
     g.save();
-    g.globalAlpha = 0.12;
-    g.fillStyle = "#101014";
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
-    g.translate(w / 2, h / 2);
-    g.rotate(-Math.PI / 9);
-    const spanX = 200 * dpr;
-    const spanY = 54 * dpr;
-    const diag = Math.hypot(w, h);
-    for (let y = -diag; y < diag; y += spanY) {
-      for (let x = -diag; x < diag; x += spanX) {
-        g.fillText("GRATTA E VINCI", x, y);
-      }
-    }
-    g.restore();
-
-    g.save();
-    const vg = g.createRadialGradient(
-      w / 2,
-      h / 2,
-      Math.min(w, h) * 0.22,
-      w / 2,
-      h / 2,
-      Math.max(w, h) * 0.78
-    );
-    vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, "rgba(0,0,0,0.22)");
-    g.fillStyle = vg;
-    g.fillRect(0, 0, w, h);
-    g.restore();
-
-    g.save();
-    g.strokeStyle = "rgba(20,20,28,0.35)";
-    g.lineWidth = Math.max(1, 1.4 * dpr);
-    g.setLineDash([7 * dpr, 6 * dpr]);
-    rr(g, 7 * dpr, 7 * dpr, w - 14 * dpr, h - 14 * dpr, 12 * dpr);
+    g.strokeStyle = "rgba(30,30,38,0.5)";
+    g.lineWidth = Math.max(1, 1.6 * dpr);
+    rr(g, z.x + 1 * dpr, z.y + 1 * dpr, z.w - 2 * dpr, z.h - 2 * dpr, z.r);
     g.stroke();
     g.restore();
 
-    drawHint(g, w, h);
+    void cw;
+    void ch;
   }
 
-  function drawHint(g, w, h) {
-    const cx = w / 2;
-    const cy = h / 2;
-    g.save();
-    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
-    const tw = g.measureText(label).width;
-    const pw = tw + 74 * dpr;
-    const ph = 58 * dpr;
-    rr(g, cx - pw / 2, cy - ph / 2, pw, ph, 16 * dpr);
-    g.fillStyle = "rgba(255,255,255,0.9)";
-    g.fill();
-    g.strokeStyle = "rgba(20,20,28,0.18)";
-    g.lineWidth = 1.5 * dpr;
-    g.stroke();
-
-    drawCoin(g, cx - pw / 2 + 26 * dpr, cy - 2 * dpr, 14 * dpr);
-    g.fillStyle = "#15151b";
-    g.textAlign = "left";
-    g.textBaseline = "middle";
-    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
-    g.fillText(label, cx - pw / 2 + 48 * dpr, cy - 8 * dpr);
-    g.font = `700 ${Math.round(9.5 * dpr)}px system-ui, sans-serif`;
-    g.fillStyle = "rgba(20,20,28,0.6)";
-    g.fillText(
-      "gratta con il dito o il mouse",
-      cx - pw / 2 + 48 * dpr,
-      cy + 10 * dpr
-    );
-    g.restore();
+  function drawFoil() {
+    if (!ctx || !canvas) return;
+    const g = ctx;
+    g.globalCompositeOperation = "source-over";
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    for (const z of zones) fillZone(g, z);
   }
 
   function localPos(e) {
@@ -458,7 +372,7 @@
     const p = localPos(e);
     pointer = { x: p.cx, y: p.cy };
     const speed = last ? Math.hypot(p.x - last.x, p.y - last.y) : 0;
-    setScratchIntensity(Math.min(1, speed / (cell * 2)));
+    setScratchIntensity(Math.min(1, speed / (13 * dpr * 2)));
     scratchSegment(last.x, last.y, p.x, p.y);
     last = { x: p.x, y: p.y };
   }
@@ -470,51 +384,75 @@
   }
 
   function scratchSegment(x0, y0, x1, y1) {
-    if (!ctx) return;
-    const brush = cell * 1.6;
+    if (!ctx || !zones.length) return;
+    const brush = 13 * dpr;
 
     ctx.globalCompositeOperation = "destination-out";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "rgba(0,0,0,1)";
-    ctx.lineWidth = brush;
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-
-    const dist = Math.hypot(x1 - x0, y1 - y0);
-    const steps = Math.max(1, Math.ceil(dist / (cell * 0.7)));
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = x0 + (x1 - x0) * t;
-      const y = y0 + (y1 - y0) * t;
+    for (const z of zones) {
+      if (
+        x1 < z.x - brush ||
+        x1 > z.x + z.w + brush ||
+        y1 < z.y - brush ||
+        y1 > z.y + z.h + brush
+      )
+        continue;
+      ctx.save();
+      rr(ctx, z.x, z.y, z.w, z.h, z.r);
+      ctx.clip();
+      ctx.lineWidth = brush;
       ctx.beginPath();
-      ctx.arc(x, y, brush * (0.32 + Math.random() * 0.28), 0, Math.PI * 2);
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x1, y1, brush * 0.62, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(0,0,0,1)";
       ctx.fill();
-      markCells(x, y, brush * 0.95);
+      ctx.restore();
+    }
+
+    const dist = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(1, Math.ceil(dist / (brush * 0.6)));
+    for (const z of zones) {
+      if (
+        x1 < z.x - brush ||
+        x1 > z.x + z.w + brush ||
+        y1 < z.y - brush ||
+        y1 > z.y + z.h + brush
+      )
+        continue;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        markZone(z, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, brush * 0.7);
+      }
     }
     updateProgress();
   }
 
-  function markCells(x, y, r) {
-    const c0 = Math.max(0, Math.floor((x - r) / cell));
-    const c1 = Math.min(cols - 1, Math.floor((x + r) / cell));
-    const r0 = Math.max(0, Math.floor((y - r) / cell));
-    const r1 = Math.min(rows - 1, Math.floor((y + r) / cell));
+  function markZone(z, x, y, r) {
+    if (x < z.x - r || x > z.x + z.w + r || y < z.y - r || y > z.y + z.h + r)
+      return;
+    const cw = z.w / z.cols;
+    const ch = z.h / z.rows;
+    const c0 = Math.max(0, Math.floor((x - r - z.x) / cw));
+    const c1 = Math.min(z.cols - 1, Math.floor((x + r - z.x) / cw));
+    const r0 = Math.max(0, Math.floor((y - r - z.y) / ch));
+    const r1 = Math.min(z.rows - 1, Math.floor((y + r - z.y) / ch));
     const r2 = r * r;
     for (let ry = r0; ry <= r1; ry++) {
       for (let cx = c0; cx <= c1; cx++) {
-        const px = (cx + 0.5) * cell;
-        const py = (ry + 0.5) * cell;
+        const px = z.x + (cx + 0.5) * cw;
+        const py = z.y + (ry + 0.5) * ch;
         const dx = px - x;
         const dy = py - y;
         if (dx * dx + dy * dy <= r2) {
-          const idx = ry * cols + cx;
-          if (cells[idx] === 0) {
-            cells[idx] = 1;
-            marked++;
+          const idx = ry * z.cols + cx;
+          if (z.cells[idx] === 0) {
+            z.cells[idx] = 1;
+            z.marked++;
           }
         }
       }
@@ -522,21 +460,40 @@
   }
 
   function updateProgress() {
-    const total = cols * rows;
+    if (!zones.length) return;
+    let total = 0;
+    let done = 0;
+    for (const z of zones) {
+      total += z.cols * z.rows;
+      done += z.marked;
+    }
     if (!total) return;
-    const p = marked / total;
+    const p = done / total;
     progress = p;
     onprogress?.(p);
     if (!revealed && p >= threshold) reveal();
   }
 
-  function reveal() {
-    if (revealed) return;
-    revealed = true;
+  let finished = false;
+
+  function finish() {
+    if (finished) return;
+    finished = true;
     drawing = false;
     stopScratch();
     oncomplete?.();
   }
+
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    finish();
+  }
+
+  // il bottone "Rivela tutto" del genitore imposta `revealed`
+  $effect(() => {
+    if (revealed) finish();
+  });
 
   $effect(() => {
     if (!canvas || !wrap) return;
@@ -579,19 +536,6 @@
     >
   {/if}
 
-  {#if !revealed}
-    <div class="hud">
-      <span class="hud__pct" aria-live="polite"
-        >{Math.round(progress * 100)}%</span
-      >
-      <button
-        class="hud__btn"
-        type="button"
-        onpointerdown={(e) => e.stopPropagation()}
-        onclick={reveal}>Rivela tutto</button
-      >
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -660,47 +604,8 @@
     transform: translateY(-1px);
   }
 
-  .hud {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 10px;
-    z-index: 7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    pointer-events: none;
-  }
 
-  .hud__pct {
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    color: #fff;
-    backdrop-filter: blur(6px);
-  }
 
-  .hud__btn {
-    pointer-events: auto;
-    padding: 7px 13px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.62);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    font-size: 11.5px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    backdrop-filter: blur(6px);
-    transition: transform 0.14s ease, background 0.2s ease;
-  }
 
-  .hud__btn:active {
-    transform: scale(0.95);
-    background: rgba(0, 0, 0, 0.8);
-  }
+
 </style>

@@ -25,36 +25,31 @@
       : [{ selector: ".sym", key: "symbols" }]
   );
 
+  let finished = false;
+
   function handleComplete() {
-    if (revealed) return;
+    if (finished) return;
+    finished = true;
     revealed = true;
     audio.stopScratch();
     audio.reveal();
     setTimeout(() => audio.play(outcome.kind), 280);
     onreveal?.(outcome);
   }
+
+  // il bottone "Rivela tutto" completa senza passare dalla canvas
+  $effect(() => {
+    if (revealed && !finished) handleComplete();
+  });
 </script>
 
 <div class="play">
   <div class="ticket" data-theme={ticket.theme}>
-    <div class="ticket__top">
-      <div class="ticket__brand">
-        <span class="ticket__brand-main">{ticket.brand}</span>
-        <span class="ticket__brand-sub">{ticket.variant}</span>
-      </div>
-      <div class="ticket__price">€{ticket.price}</div>
-    </div>
-
-    <div class="ticket__prize">
-      <span class="ticket__prize-k">vincita massima</span>
-      <span class="ticket__prize-v">{eur(ticket.maxPrize)}</span>
-    </div>
-
     <div class="ticket__play">
       <ScratchSurface
         theme={ticket.theme}
-        label="GRATTA QUI"
         {targets}
+        bind:revealed
         oncomplete={handleComplete}
       >
         <TicketArt {ticket} {outcome} />
@@ -66,6 +61,13 @@
       <span class="ticket__real">⚑ {ticket.realName}</span>
     </div>
   </div>
+
+  {#if !revealed}
+    <button
+      class="btn btn--gold btn--block reveal"
+      onclick={() => (revealed = true)}>Rivela tutto</button
+    >
+  {/if}
 
   {#if revealed}
     <ResultPanel {ticket} {outcome} {onnext} {onstop} />
@@ -80,8 +82,12 @@
   .play {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     padding-top: 10px;
+  }
+
+  .reveal {
+    animation: fade-in 0.25s ease both;
   }
 
   .ticket {
@@ -101,25 +107,8 @@
     border-color: rgba(56, 189, 248, 0.4);
   }
 
-  .ticket__top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 15px 16px 8px;
-  }
 
-  .ticket__brand {
-    display: flex;
-    flex-direction: column;
-  }
 
-  .ticket__brand-main {
-    font-size: 21px;
-    font-weight: 900;
-    letter-spacing: 0.01em;
-    line-height: 1;
-  }
 
   .ticket[data-theme="gold"] .ticket__brand-main {
     color: var(--gold);
@@ -129,54 +118,14 @@
     color: var(--blue);
   }
 
-  .ticket__brand-sub {
-    margin-top: 3px;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted-2);
-  }
 
-  .ticket__price {
-    display: grid;
-    place-items: center;
-    min-width: 52px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: linear-gradient(180deg, #ffd24a, #f0a900);
-    color: #241a00;
-    font-size: 18px;
-    font-weight: 900;
-    box-shadow: 0 8px 20px -10px rgba(245, 179, 1, 0.9);
-  }
 
-  .ticket__prize {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 0 16px 12px;
-  }
 
-  .ticket__prize-k {
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted-2);
-  }
 
-  .ticket__prize-v {
-    font-size: 20px;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    color: var(--txt);
-  }
 
   .ticket__play {
     position: relative;
-    padding: 0 10px;
+    padding: 10px 10px 0;
   }
 
   .ticket__foot {

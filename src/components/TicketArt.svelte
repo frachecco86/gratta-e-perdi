@@ -8,18 +8,12 @@
 
 {#if isNumbers}
   <div class="art art--nums" data-theme={ticket.theme}>
-    <div class="band">
-      <span class="band__k">I TUOI NUMERI</span>
-      <span class="band__v">{ticket.mechanic}</span>
+    <div class="brandhead">
+      <span class="brandhead__main">{ticket.brand}</span>
+      <span class="brandhead__sub">{ticket.variant}</span>
     </div>
 
-    <div class="ynums" style="--cols:3">
-      {#each outcome.yours as n (n)}
-        <div class="ynum" class:is-match={outcome.matches.includes(n)}>
-          {pad2(n)}
-        </div>
-      {/each}
-    </div>
+    <div class="rule">SE TROVI I NUMERI VINCI</div>
 
     <div class="band">
       <span class="band__k">NUMERI VINCENTI</span>
@@ -34,24 +28,39 @@
       {/each}
     </div>
 
-    {#if ticket.maxPrize >= 1000000}
-      <div class="stamp">
-        1 BIGLIETTO SU {eur(ticket.maxOdds).replace(" €", "")} VINCE IL PREMIO MAX
-      </div>
-    {/if}
+    <div class="band">
+      <span class="band__k">I TUOI NUMERI</span>
+    </div>
 
-    <div class="brandline">{ticket.brand} · {ticket.variant}</div>
+    <div class="ynums" style="--cols:3">
+      {#each outcome.yours as n (n)}
+        <div class="ynum" class:is-match={outcome.matches.includes(n)}>
+          {pad2(n)}
+        </div>
+      {/each}
+    </div>
+
+    <div class="footrow">
+      <span class="footrow__max">PREMIO MASSIMO {eur(ticket.maxPrize).toUpperCase()}</span>
+      <span class="footrow__badge">€{ticket.price}</span>
+    </div>
   </div>
 {:else}
   <div class="art art--vela" data-theme={ticket.theme}>
-    <div class="band">
-      <span class="band__k">TROVA 3 SIMBOLI UGUALI</span>
-      <span class="band__v">Vinci il premio del simbolo</span>
+    <div class="brandhead">
+      <span class="brandhead__main">{ticket.brand}</span>
+      <span class="brandhead__sub">{ticket.variant}</span>
     </div>
+
+    <div class="rule">TROVA 3 SIMBOLI UGUALI</div>
 
     <div class="syms">
       {#each outcome.cells as c, i (i)}
-        <div class="sym" class:is-match={outcome.matchIndexes.includes(i)}>
+        <div
+          class="sym"
+          class:is-match={outcome.matchIndexes.includes(i)}
+          data-sym={c}
+        >
           <span class="sym__e">{c}</span>
         </div>
       {/each}
@@ -63,11 +72,95 @@
       {/each}
     </div>
 
-    <div class="brandline">{ticket.brand} · {ticket.variant}</div>
+    <div class="footrow">
+      <span class="footrow__max">PREMIO MASSIMO {eur(ticket.maxPrize).toUpperCase()}</span>
+      <span class="footrow__badge">€{ticket.price}</span>
+    </div>
   </div>
 {/if}
 
 <style>
+  .brandhead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 2px;
+  }
+
+  .brandhead__main {
+    font-size: clamp(19px, 6.6vw, 25px);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: #1f7a3a;
+    -webkit-text-stroke: 1.4px #0d3d1c;
+    paint-order: stroke fill;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.28);
+  }
+
+  .art[data-theme="silver"] .brandhead__main {
+    color: #e0283f;
+    -webkit-text-stroke-color: #6b0d1c;
+  }
+
+  .art[data-theme="blue"] .brandhead__main {
+    color: #0e7490;
+    -webkit-text-stroke-color: #04303d;
+  }
+
+  .brandhead__sub {
+    margin-top: 2px;
+    font-size: 8.5px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--sub);
+  }
+
+  .rule {
+    align-self: center;
+    padding: 2.5px 10px;
+    border-radius: 4px;
+    background: var(--band-bg);
+    color: var(--band-ink);
+    font-size: 8.5px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .footrow {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footrow__max {
+    flex: 1;
+    padding: 4px 8px;
+    border-radius: 5px;
+    background: var(--band-bg);
+    color: var(--band-ink);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .footrow__badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffd24a, #f0a900);
+    border: 1.5px solid rgba(60, 40, 0, 0.5);
+    color: #241a00;
+    font-size: 12px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+
   .art {
     --paper: #fffdf6;
     --ink: #141414;

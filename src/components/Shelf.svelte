@@ -111,51 +111,79 @@
     overflow: hidden;
     display: flex;
     align-items: stretch;
-    gap: 12px;
+    gap: 13px;
     text-align: left;
-    padding: 10px;
-    border-radius: 18px;
+    padding: 11px;
+    border-radius: 20px;
     border: 1px solid var(--line);
-    background: linear-gradient(150deg, #1c1c26, #121219);
-    box-shadow: var(--shadow);
-    transition: transform 0.16s ease, border-color 0.2s ease;
+    background:
+      radial-gradient(120% 140% at 0% 0%, var(--glow, rgba(255,255,255,0.05)), transparent 60%),
+      linear-gradient(150deg, #1e1e29, #111117);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 18px 38px -22px rgba(0,0,0,0.95);
+    transition: transform 0.18s cubic-bezier(0.22,1,0.36,1),
+      border-color 0.22s ease, box-shadow 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tcard::after {
+    content: "";
+    position: absolute;
+    right: -40%;
+    top: -60%;
+    width: 70%;
+    height: 220%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    transform: rotate(16deg);
+    pointer-events: none;
+    transition: transform 0.6s ease;
+  }
+
+  .tcard:hover {
+    border-color: var(--line-2);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.07) inset,
+      0 26px 48px -24px rgba(0,0,0,1);
+    transform: translateY(-2px);
+  }
+
+  .tcard:hover::after {
+    transform: translateX(-40%) rotate(16deg);
   }
 
   .tcard:active {
-    transform: scale(0.985);
+    transform: scale(0.985) translateY(0);
   }
 
-  .tcard__art {
-    flex: 0 0 84px;
-    width: 84px;
-    display: block;
-  }
-
-  .tcard__art :global(.cover) {
-    height: 100%;
-    min-height: 132px;
-  }
-
-  .tcard__body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
+  .tcard[data-theme="silver"] {
+    --glow: rgba(255, 61, 94, 0.14);
   }
 
   .tcard[data-theme="gold"] {
-    background: linear-gradient(150deg, #241c08, #14100a);
-    border-color: rgba(245, 179, 1, 0.32);
+    --glow: rgba(245, 179, 1, 0.18);
+    background:
+      radial-gradient(120% 140% at 0% 0%, var(--glow), transparent 60%),
+      linear-gradient(150deg, #241c08, #13100a);
+    border-color: rgba(245, 179, 1, 0.3);
+  }
+
+  .tcard[data-theme="gold"]:hover {
+    border-color: rgba(245, 179, 1, 0.5);
   }
 
   .tcard[data-theme="blue"] {
-    background: linear-gradient(150deg, #08202e, #071017);
-    border-color: rgba(56, 189, 248, 0.32);
+    --glow: rgba(56, 189, 248, 0.18);
+    background:
+      radial-gradient(120% 140% at 0% 0%, var(--glow), transparent 60%),
+      linear-gradient(150deg, #08202e, #061016);
+    border-color: rgba(56, 189, 248, 0.3);
   }
 
-  .tcard__sheen {
-    display: none;
+  .tcard[data-theme="blue"]:hover {
+    border-color: rgba(56, 189, 248, 0.5);
   }
+
 
   .tcard__top {
     display: flex;
@@ -165,9 +193,10 @@
   }
 
   .tcard__brand {
-    font-size: 17px;
+    font-size: 17.5px;
     font-weight: 900;
-    letter-spacing: 0.02em;
+    letter-spacing: -0.005em;
+    line-height: 1.05;
   }
 
   .tcard__price {
@@ -207,7 +236,7 @@
   }
 
   .tcard__prize-v {
-    font-size: 26px;
+    font-size: 27px;
     font-weight: 900;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
@@ -241,8 +270,21 @@
   }
 
   .tcard__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     color: var(--txt);
     font-weight: 800;
+    padding: 5px 11px;
+    margin: -5px -4px -5px 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line);
+    transition: background 0.2s ease;
+  }
+
+  .tcard:hover .tcard__cta {
+    background: rgba(255, 255, 255, 0.13);
   }
 
   .tcard__flag {
