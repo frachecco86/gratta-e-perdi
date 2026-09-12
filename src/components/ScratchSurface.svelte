@@ -257,58 +257,50 @@
           y: (r.top - base.top) * dpr,
           w: r.width * dpr,
           h: r.height * dpr,
+          sym: el.dataset.sym || el.textContent.trim(),
         });
       });
     }
     return out;
   }
 
-  // ---- copertine allineate al layout reale del tagliando ----
+  // ---- copertine allineate 1:1 alle celle del tagliando ----
+  // Ogni simbolo e' centrato esattamente sulla propria cella: nessun
+  // sparpagliamento, la copertura combacia con quello che c'e' sotto.
+  function fillTile(x, y, w, h, fn) {
+    const pad = Math.min(w, h) * 0.06;
+    fn(x + w / 2, y + h / 2, w - pad * 2, h - pad * 2);
+  }
+
   function coinTile(x, y, w, h) {
-    drawCoin(ctx, x + w / 2, y + h / 2, Math.min(w, h) * 0.5);
+    fillTile(x, y, w, h, (cx, cy, tw, th) =>
+      drawCoin(ctx, cx, cy, Math.min(tw, th) * 0.36)
+    );
   }
 
   function banknoteTile(x, y, w, h) {
-    const bw = w * 0.94;
-    const bh = h * 0.52;
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    for (let i = -1; i <= 1; i++) {
-      drawBanknote(ctx, cx, cy + i * h * 0.14, bw, bh, i * 0.1);
-    }
-  }
-
-  function seaTile(x, y, w, h) {
-    const s = Math.min(w, h) * 0.34;
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    const r = Math.random();
-    const rot = (Math.random() - 0.5) * 0.4;
-    if (r < 0.34) drawAnchor(ctx, cx, cy, s, rot);
-    else if (r < 0.64) drawSail(ctx, cx, cy, s, rot);
-    else if (r < 0.84)
-      drawStar(ctx, cx, cy, s * 0.7, rot, "rgba(255,255,255,0.92)");
-    else drawCoin(ctx, cx, cy, s * 0.8);
-  }
-
-  function scatterMoney(w, h) {
-    const step = 88 * dpr;
-    for (let y = -step; y < h + step; y += step) {
-      let col = 0;
-      for (let x = -step; x < w + step; x += step) {
-        const jx =
-          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.5;
-        const jy = y + (Math.random() - 0.5) * step * 0.5;
-        if (Math.random() < 0.55)
-          drawDollar(ctx, jx, jy, step * 0.36, (Math.random() - 0.5) * 0.6);
-        else drawCoin(ctx, jx, jy, step * 0.17);
-        col++;
+    fillTile(x, y, w, h, (cx, cy, tw, th) => {
+      const bw = tw * 0.96;
+      const bh = th * 0.6;
+      // mazzetta di banconote impilate, centrata nella cella
+      for (let i = -1; i <= 1; i++) {
+        drawBanknote(ctx, cx, cy + i * th * 0.11, bw, bh, i * 0.06);
       }
-    }
+    });
+  }
+
+  function seaTile(x, y, w, h, sym) {
+    fillTile(x, y, w, h, (cx, cy, tw, th) => {
+      const s = Math.min(tw, th) * 0.38;
+      if (sym === "⚓") drawAnchor(ctx, cx, cy, s, 0);
+      else if (sym === "⛵") drawSail(ctx, cx, cy, s, 0);
+      else if (sym === "⭐")
+        drawStar(ctx, cx, cy, s * 0.9, 0, "rgba(255,255,255,0.95)");
+      else drawCoin(ctx, cx, cy, s * 0.95);
+    });
   }
 
   function drawMoneyCover(w, h, layout) {
-    scatterMoney(w, h);
     for (const c of layout?.winning || []) coinTile(c.x, c.y, c.w, c.h);
     for (const c of layout?.yours || []) banknoteTile(c.x, c.y, c.w, c.h);
   }
@@ -317,14 +309,7 @@
     for (let i = 0; i < 6; i++) {
       drawWaveLine(ctx, h * (0.1 + i * 0.16), w, 5 * dpr, 6 * dpr, 0.26);
     }
-    const cells = layout?.symbols || [];
-    if (!cells.length) {
-      const step = 104 * dpr;
-      for (let y = -step; y < h + step; y += step)
-        for (let x = -step; x < w + step; x += step) seaTile(x, y, step, step);
-    } else {
-      for (const c of cells) seaTile(c.x, c.y, c.w, c.h);
-    }
+    for (const c of layout?.symbols || []) seaTile(c.x, c.y, c.w, c.h, c.sym);
   }
 
   function drawFoil(layout) {

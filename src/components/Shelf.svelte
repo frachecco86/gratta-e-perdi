@@ -1,6 +1,7 @@
 <script>
   import { TICKETS, eur, int, DISCLAIMER } from "../lib/tickets.js";
   import Ledger from "./Ledger.svelte";
+  import TicketCover from "./TicketCover.svelte";
 
   let { onticket } = $props();
 </script>
@@ -22,24 +23,25 @@
   <div class="grid">
     {#each TICKETS as t (t.id)}
       <button class="tcard" data-theme={t.theme} onclick={() => onticket(t)}>
-        <span class="tcard__sheen" aria-hidden="true"></span>
-        <div class="tcard__top">
-          <span class="tcard__brand">{t.brand}</span>
-          <span class="tcard__price">€{t.price}</span>
-        </div>
-        <span class="tcard__variant">{t.variant}</span>
-        <div class="tcard__prize">
-          <span class="tcard__prize-k">premio max</span>
-          <span class="tcard__prize-v">{eur(t.maxPrize)}</span>
-        </div>
-        <p class="tcard__tag">{t.tagline}</p>
-        <div class="tcard__meta">
-          <span>1 su {int(t.maxOdds)}</span>
-          <span class="tcard__cta">Gratta →</span>
-        </div>
-        {#if t.invented}
-          <span class="tcard__flag">biglietto inventato</span>
-        {/if}
+        <span class="tcard__art">
+          <TicketCover ticket={t} compact />
+        </span>
+        <span class="tcard__body">
+          <div class="tcard__top">
+            <span class="tcard__brand">{t.brand}</span>
+            <span class="tcard__price">€{t.price}</span>
+          </div>
+          <span class="tcard__variant">{t.variant}{#if t.invented}<span class="tcard__flag">inventato</span>{/if}</span>
+          <div class="tcard__prize">
+            <span class="tcard__prize-k">premio max</span>
+            <span class="tcard__prize-v">{eur(t.maxPrize)}</span>
+          </div>
+          <p class="tcard__tag">{t.tagline}</p>
+          <div class="tcard__meta">
+            <span>1 su {int(t.maxOdds)}</span>
+            <span class="tcard__cta">Gratta →</span>
+          </div>
+        </span>
       </button>
     {/each}
   </div>
@@ -107,8 +109,11 @@
   .tcard {
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
     text-align: left;
-    padding: 14px 15px 13px;
+    padding: 10px;
     border-radius: 18px;
     border: 1px solid var(--line);
     background: linear-gradient(150deg, #1c1c26, #121219);
@@ -118,6 +123,24 @@
 
   .tcard:active {
     transform: scale(0.985);
+  }
+
+  .tcard__art {
+    flex: 0 0 84px;
+    width: 84px;
+    display: block;
+  }
+
+  .tcard__art :global(.cover) {
+    height: 100%;
+    min-height: 132px;
+  }
+
+  .tcard__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .tcard[data-theme="gold"] {
@@ -131,19 +154,7 @@
   }
 
   .tcard__sheen {
-    position: absolute;
-    top: -60%;
-    left: -20%;
-    width: 60%;
-    height: 220%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.09),
-      transparent
-    );
-    transform: rotate(18deg);
-    pointer-events: none;
+    display: none;
   }
 
   .tcard__top {
@@ -235,17 +246,16 @@
   }
 
   .tcard__flag {
-    position: absolute;
-    top: 12px;
-    right: 74px;
-    font-size: 8.5px;
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 5px;
+    border: 1px dashed rgba(56, 189, 248, 0.6);
+    border-radius: 5px;
+    font-size: 7.5px;
     font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0.06em;
     color: var(--blue);
-    border: 1px dashed rgba(56, 189, 248, 0.5);
-    border-radius: 6px;
-    padding: 2px 6px;
+    vertical-align: middle;
   }
 
   .disc {
