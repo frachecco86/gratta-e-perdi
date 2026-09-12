@@ -16,10 +16,10 @@
     children,
   } = $props();
 
-  const FOILS = {
-    silver: ["#cfd2d7", "#8b8f96", "#eceef1", "#63676d"],
-    gold: ["#ffd98a", "#c9962f", "#fff0c4", "#8a5f12"],
-    blue: ["#9fd8ef", "#3d8fb4", "#dcf4fc", "#225b7a"],
+  const COVERS = {
+    silver: { base: ["#eef0f3", "#b7bbc1", "#ffffff", "#83878d"], money: true },
+    gold: { base: ["#ffe49b", "#c9952c", "#fff3cc", "#835a0f"], money: true },
+    blue: { base: ["#cdeefb", "#57a6c6", "#ecfaff", "#2b7595"], money: false },
   };
 
   let wrap = $state(null);
@@ -59,96 +59,361 @@
     ready = true;
   }
 
+  function rr(g, x, y, w, h, r) {
+    const rad = Math.min(r, w / 2, h / 2);
+    g.beginPath();
+    g.moveTo(x + rad, y);
+    g.arcTo(x + w, y, x + w, y + h, rad);
+    g.arcTo(x + w, y + h, x, y + h, rad);
+    g.arcTo(x, y + h, x, y, rad);
+    g.arcTo(x, y, x + w, y, rad);
+    g.closePath();
+  }
+
+  function drawCoin(g, x, y, r) {
+    const rg = g.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r);
+    rg.addColorStop(0, "#fff6c8");
+    rg.addColorStop(0.45, "#f5c542");
+    rg.addColorStop(0.8, "#cf9412");
+    rg.addColorStop(1, "#8a5c06");
+    g.save();
+    g.fillStyle = rg;
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.fill();
+    g.lineWidth = Math.max(1, r * 0.1);
+    g.strokeStyle = "#8a5c06";
+    g.stroke();
+    g.beginPath();
+    g.arc(x, y, r * 0.74, 0, Math.PI * 2);
+    g.strokeStyle = "rgba(120,80,0,0.55)";
+    g.lineWidth = Math.max(1, r * 0.06);
+    g.stroke();
+    g.fillStyle = "rgba(110,72,0,0.9)";
+    g.font = `900 ${Math.round(r * 1.15)}px system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("€", x, y + r * 0.06);
+    g.restore();
+  }
+
+  function drawDollar(g, x, y, size, rot) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.fillStyle = "rgba(24,104,58,0.9)";
+    g.font = `900 ${Math.round(size)}px system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("$", 0, 0);
+    g.restore();
+  }
+
+  function drawBanknote(g, x, y, w, h, rot) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.fillStyle = "#2f9160";
+    rr(g, -w / 2, -h / 2, w, h, h * 0.18);
+    g.fill();
+    g.strokeStyle = "rgba(255,255,255,0.75)";
+    g.lineWidth = Math.max(1, w * 0.012);
+    rr(g, -w / 2 + w * 0.07, -h / 2 + h * 0.14, w * 0.86, h * 0.72, h * 0.12);
+    g.stroke();
+    g.fillStyle = "rgba(255,255,255,0.9)";
+    g.beginPath();
+    g.arc(0, 0, h * 0.22, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#2f9160";
+    g.font = `900 ${Math.round(h * 0.34)}px system-ui, sans-serif`;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText("$", 0, h * 0.01);
+    g.restore();
+  }
+
+  function drawWaveLine(g, y, w, amp, step, alpha) {
+    g.save();
+    g.globalAlpha = alpha;
+    g.lineWidth = Math.max(1.5, 2.4 * dpr);
+    g.strokeStyle = "#ffffff";
+    for (let k = 0; k < 3; k++) {
+      g.beginPath();
+      for (let x = -20; x <= w + 20; x += step) {
+        const yy = y + k * 7 * dpr + Math.sin(x / (26 * dpr) + k) * amp;
+        if (x <= -20 + step) g.moveTo(x, yy);
+        else g.lineTo(x, yy);
+      }
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function drawAnchor(g, x, y, s, rot) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.strokeStyle = "#0b3b52";
+    g.fillStyle = "#0b3b52";
+    g.lineWidth = Math.max(1, s * 0.12);
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(0, -s * 0.6);
+    g.lineTo(0, s * 0.5);
+    g.stroke();
+    g.beginPath();
+    g.arc(0, -s * 0.72, s * 0.13, 0, Math.PI * 2);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-s * 0.32, -s * 0.3);
+    g.lineTo(s * 0.32, -s * 0.3);
+    g.stroke();
+    g.beginPath();
+    g.arc(0, s * 0.02, s * 0.55, Math.PI * 0.12, Math.PI * 0.88);
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-s * 0.54, s * 0.32);
+    g.lineTo(-s * 0.64, s * 0.06);
+    g.lineTo(-s * 0.36, s * 0.12);
+    g.closePath();
+    g.fill();
+    g.beginPath();
+    g.moveTo(s * 0.54, s * 0.32);
+    g.lineTo(s * 0.64, s * 0.06);
+    g.lineTo(s * 0.36, s * 0.12);
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+
+  function drawSail(g, x, y, s, rot) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.fillStyle = "#0b3b52";
+    g.beginPath();
+    g.moveTo(-s * 0.6, s * 0.34);
+    g.lineTo(s * 0.6, s * 0.34);
+    g.lineTo(s * 0.4, s * 0.56);
+    g.lineTo(-s * 0.4, s * 0.56);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "#0b3b52";
+    g.lineWidth = Math.max(1, s * 0.07);
+    g.beginPath();
+    g.moveTo(0, s * 0.34);
+    g.lineTo(0, -s * 0.62);
+    g.stroke();
+    g.fillStyle = "#ffffff";
+    g.strokeStyle = "#0b3b52";
+    g.lineWidth = Math.max(1, s * 0.05);
+    g.beginPath();
+    g.moveTo(s * 0.04, -s * 0.56);
+    g.lineTo(s * 0.5, s * 0.14);
+    g.lineTo(s * 0.04, s * 0.14);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-s * 0.04, -s * 0.46);
+    g.lineTo(-s * 0.42, s * 0.14);
+    g.lineTo(-s * 0.04, s * 0.14);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.restore();
+  }
+
+  function drawStar(g, x, y, s, rot, color) {
+    g.save();
+    g.translate(x, y);
+    g.rotate(rot);
+    g.fillStyle = color;
+    g.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = (Math.PI / 5) * i - Math.PI / 2;
+      const rad = i % 2 === 0 ? s : s * 0.45;
+      const px = Math.cos(ang) * rad;
+      const py = Math.sin(ang) * rad;
+      if (i === 0) g.moveTo(px, py);
+      else g.lineTo(px, py);
+    }
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+
+  function drawMoneyCover(w, h) {
+    const step = 82 * dpr;
+    for (let y = -step; y < h + step; y += step) {
+      let col = 0;
+      for (let x = -step; x < w + step; x += step) {
+        const jx =
+          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.4;
+        const jy = y + (Math.random() - 0.5) * step * 0.4;
+        const top = jy < h * 0.45;
+        const r = Math.random();
+        if (top) {
+          if (r < 0.55)
+            drawDollar(
+              ctx,
+              jx,
+              jy,
+              step * 0.5 * (0.85 + Math.random() * 0.5),
+              (Math.random() - 0.5) * 0.5
+            );
+          else drawCoin(ctx, jx, jy, step * 0.3 * (0.8 + Math.random() * 0.4));
+        } else if (r < 0.5) {
+          drawCoin(ctx, jx, jy, step * 0.32 * (0.8 + Math.random() * 0.5));
+        } else if (r < 0.85) {
+          drawBanknote(
+            ctx,
+            jx,
+            jy,
+            step * 0.74,
+            step * 0.44,
+            (Math.random() - 0.5) * 0.6
+          );
+        } else {
+          drawDollar(ctx, jx, jy, step * 0.52, (Math.random() - 0.5) * 0.5);
+        }
+        col++;
+      }
+    }
+  }
+
+  function drawSeaCover(w, h) {
+    for (let i = 0; i < 5; i++) {
+      drawWaveLine(ctx, h * (0.14 + i * 0.19), w, 5 * dpr, 6 * dpr, 0.28);
+    }
+    const step = 104 * dpr;
+    for (let y = -step; y < h + step; y += step) {
+      let col = 0;
+      for (let x = -step; x < w + step; x += step) {
+        const jx =
+          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.4;
+        const jy = y + (Math.random() - 0.5) * step * 0.4;
+        const r = Math.random();
+        const rot = (Math.random() - 0.5) * 0.5;
+        if (r < 0.34) drawAnchor(ctx, jx, jy, step * 0.28, rot);
+        else if (r < 0.62) drawSail(ctx, jx, jy, step * 0.3, rot);
+        else if (r < 0.82)
+          drawStar(ctx, jx, jy, step * 0.16, rot, "rgba(255,255,255,0.85)");
+        else drawCoin(ctx, jx, jy, step * 0.22);
+        col++;
+      }
+    }
+  }
+
   function drawFoil() {
     if (!ctx || !canvas) return;
     const w = canvas.width;
     const h = canvas.height;
-    const pal = FOILS[theme] || FOILS.silver;
+    const pal = COVERS[theme] || COVERS.silver;
+    const g = ctx;
 
-    ctx.globalCompositeOperation = "source-over";
-    ctx.clearRect(0, 0, w, h);
+    g.globalCompositeOperation = "source-over";
+    g.clearRect(0, 0, w, h);
 
-    const g = ctx.createLinearGradient(0, 0, w, h);
-    g.addColorStop(0, pal[0]);
-    g.addColorStop(0.42, pal[1]);
-    g.addColorStop(0.58, pal[2]);
-    g.addColorStop(1, pal[3]);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
+    const bg = g.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, pal.base[0]);
+    bg.addColorStop(0.42, pal.base[1]);
+    bg.addColorStop(0.58, pal.base[2]);
+    bg.addColorStop(1, pal.base[3]);
+    g.fillStyle = bg;
+    g.fillRect(0, 0, w, h);
 
-    ctx.save();
-    ctx.globalAlpha = 0.1;
-    ctx.fillStyle = "#ffffff";
+    if (pal.money) drawMoneyCover(w, h);
+    else drawSeaCover(w, h);
+
+    g.save();
+    g.globalAlpha = 0.08;
+    g.fillStyle = "#ffffff";
     const band = Math.max(14, 20 * dpr);
-    for (let x = -h; x < w; x += band * 2.4) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + h, h);
-      ctx.lineTo(x + h + band, h);
-      ctx.lineTo(x + band, 0);
-      ctx.closePath();
-      ctx.fill();
+    for (let x = -h; x < w; x += band * 2.6) {
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x + h, h);
+      g.lineTo(x + h + band, h);
+      g.lineTo(x + band, 0);
+      g.closePath();
+      g.fill();
     }
-    ctx.restore();
+    g.restore();
 
-    ctx.save();
-    ctx.globalAlpha = 0.15;
-    const dots = Math.floor((w * h) / 900);
-    for (let i = 0; i < dots; i++) {
-      const x = Math.random() * w;
-      const y = Math.random() * h;
-      const s = Math.random() * 1.7 * dpr;
-      ctx.fillStyle = Math.random() > 0.5 ? "#ffffff" : "#000000";
-      ctx.fillRect(x, y, s, s);
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.13;
-    ctx.fillStyle = "#111116";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate(-Math.PI / 9);
+    g.save();
+    g.globalAlpha = 0.12;
+    g.fillStyle = "#101014";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
+    g.translate(w / 2, h / 2);
+    g.rotate(-Math.PI / 9);
     const spanX = 200 * dpr;
     const spanY = 54 * dpr;
     const diag = Math.hypot(w, h);
     for (let y = -diag; y < diag; y += spanY) {
       for (let x = -diag; x < diag; x += spanX) {
-        ctx.fillText("GRATTA E VINCI", x, y);
+        g.fillText("GRATTA E VINCI", x, y);
       }
     }
-    ctx.restore();
+    g.restore();
 
-    ctx.save();
-    const vg = ctx.createRadialGradient(
+    g.save();
+    const vg = g.createRadialGradient(
       w / 2,
       h / 2,
-      Math.min(w, h) * 0.2,
+      Math.min(w, h) * 0.22,
       w / 2,
       h / 2,
       Math.max(w, h) * 0.78
     );
     vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, "rgba(0,0,0,0.3)");
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, w, h);
-    ctx.restore();
+    vg.addColorStop(1, "rgba(0,0,0,0.22)");
+    g.fillStyle = vg;
+    g.fillRect(0, 0, w, h);
+    g.restore();
 
-    ctx.save();
-    ctx.globalAlpha = 0.92;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    g.save();
+    g.strokeStyle = "rgba(20,20,28,0.35)";
+    g.lineWidth = Math.max(1, 1.4 * dpr);
+    g.setLineDash([7 * dpr, 6 * dpr]);
+    rr(g, 7 * dpr, 7 * dpr, w - 14 * dpr, h - 14 * dpr, 12 * dpr);
+    g.stroke();
+    g.restore();
+
+    drawHint(g, w, h);
+  }
+
+  function drawHint(g, w, h) {
     const cx = w / 2;
     const cy = h / 2;
-    ctx.fillStyle = "rgba(18,18,24,0.78)";
-    ctx.font = `900 ${Math.round(14 * dpr)}px system-ui, sans-serif`;
-    ctx.fillText(label, cx, cy - 7 * dpr);
-    ctx.font = `700 ${Math.round(9.5 * dpr)}px system-ui, sans-serif`;
-    ctx.fillStyle = "rgba(18,18,24,0.6)";
-    ctx.fillText("✦ gratta con il dito o il mouse ✦", cx, cy + 12 * dpr);
-    ctx.restore();
+    g.save();
+    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
+    const tw = g.measureText(label).width;
+    const pw = tw + 74 * dpr;
+    const ph = 58 * dpr;
+    rr(g, cx - pw / 2, cy - ph / 2, pw, ph, 16 * dpr);
+    g.fillStyle = "rgba(255,255,255,0.9)";
+    g.fill();
+    g.strokeStyle = "rgba(20,20,28,0.18)";
+    g.lineWidth = 1.5 * dpr;
+    g.stroke();
+
+    drawCoin(g, cx - pw / 2 + 26 * dpr, cy - 2 * dpr, 14 * dpr);
+    g.fillStyle = "#15151b";
+    g.textAlign = "left";
+    g.textBaseline = "middle";
+    g.font = `900 ${Math.round(15 * dpr)}px system-ui, sans-serif`;
+    g.fillText(label, cx - pw / 2 + 48 * dpr, cy - 8 * dpr);
+    g.font = `700 ${Math.round(9.5 * dpr)}px system-ui, sans-serif`;
+    g.fillStyle = "rgba(20,20,28,0.6)";
+    g.fillText(
+      "gratta con il dito o il mouse",
+      cx - pw / 2 + 48 * dpr,
+      cy + 10 * dpr
+    );
+    g.restore();
   }
 
   function localPos(e) {

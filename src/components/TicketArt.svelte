@@ -8,9 +8,9 @@
 
 {#if isNumbers}
   <div class="art art--nums" data-theme={ticket.theme}>
-    <div class="label">
-      <span class="label__k">I TUOI NUMERI</span>
-      <span class="label__v">{ticket.mechanic}</span>
+    <div class="band">
+      <span class="band__k">I TUOI NUMERI</span>
+      <span class="band__v">{ticket.mechanic}</span>
     </div>
 
     <div class="ynums" style="--cols:{ticket.yoursCount > 6 ? 4 : 3}">
@@ -21,8 +21,8 @@
       {/each}
     </div>
 
-    <div class="label">
-      <span class="label__k">NUMERI VINCENTI</span>
+    <div class="band">
+      <span class="band__k">NUMERI VINCENTI</span>
     </div>
 
     <div class="wnums">
@@ -35,14 +35,18 @@
     </div>
 
     {#if ticket.maxPrize >= 1000000}
-      <div class="stamp">1 SU {eur(ticket.maxOdds).replace(" €", "")} PER IL PREMIO MAX</div>
+      <div class="stamp">
+        1 BIGLIETTO SU {eur(ticket.maxOdds).replace(" €", "")} VINCE IL PREMIO MAX
+      </div>
     {/if}
+
+    <div class="brandline">{ticket.brand} · {ticket.variant}</div>
   </div>
 {:else}
   <div class="art art--vela" data-theme={ticket.theme}>
-    <div class="label">
-      <span class="label__k">TROVA 3 SIMBOLI UGUALI</span>
-      <span class="label__v">Vinci il premio del simbolo</span>
+    <div class="band">
+      <span class="band__k">TROVA 3 SIMBOLI UGUALI</span>
+      <span class="band__v">Vinci il premio del simbolo</span>
     </div>
 
     <div class="syms">
@@ -59,54 +63,96 @@
       {/each}
     </div>
 
-    <div class="wave" aria-hidden="true"></div>
+    <div class="brandline">{ticket.brand} · {ticket.variant}</div>
   </div>
 {/if}
 
 <style>
   .art {
+    --paper: #fffdf6;
+    --ink: #141414;
+    --cell: #ffffff;
+    --line: #171717;
+    --accent: #d92b3f;
+    --sub: #6b6b6b;
+    --match-a: #ffe9a8;
+    --match-b: #f0b21f;
+    --match-ink: #2a1c00;
+    --band-bg: #d92b3f;
+    --band-ink: #ffffff;
+
     position: relative;
-    padding: 18px 16px 20px;
+    padding: 16px 14px 14px;
     min-height: 330px;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background:
-      radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.07), transparent 60%),
-      linear-gradient(180deg, #16161e, #0c0c11);
-    color: #f2f2f5;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image: radial-gradient(
+        rgba(0, 0, 0, 0.045) 1px,
+        transparent 1px
+      );
+    background-size: 9px 9px;
   }
 
   .art[data-theme="gold"] {
-    background:
-      radial-gradient(110% 90% at 50% 0%, rgba(245, 179, 1, 0.16), transparent 62%),
-      linear-gradient(180deg, #1a1508, #0b0a06);
+    --paper: #0d1524;
+    --ink: #f7e7bb;
+    --cell: #0f1a2e;
+    --line: #c9a13a;
+    --accent: #f5c542;
+    --sub: #c9b98a;
+    --match-a: #ffe9a8;
+    --match-b: #f0b21f;
+    --match-ink: #2a1c00;
+    --band-bg: #f5c542;
+    --band-ink: #241a00;
+    background-image: radial-gradient(
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    );
   }
 
   .art[data-theme="blue"] {
-    background:
-      radial-gradient(110% 90% at 50% 0%, rgba(56, 189, 248, 0.18), transparent 62%),
-      linear-gradient(180deg, #071722, #050b10);
+    --paper: #eaf8fd;
+    --ink: #0b3b52;
+    --cell: #ffffff;
+    --line: #0b3b52;
+    --accent: #0e7490;
+    --sub: #4a7c8f;
+    --match-a: #cdeffb;
+    --match-b: #4db8dd;
+    --match-ink: #04283a;
+    --band-bg: #0e7490;
+    --band-ink: #ffffff;
+    background-image: radial-gradient(
+      rgba(11, 59, 82, 0.06) 1px,
+      transparent 1px
+    );
   }
 
-  .label {
+  .band {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
   }
 
-  .label__k {
-    font-size: 10px;
+  .band__k {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 4px;
+    background: var(--band-bg);
+    color: var(--band-ink);
+    font-size: 9.5px;
     font-weight: 900;
-    letter-spacing: 0.16em;
-    color: var(--muted);
-    text-transform: uppercase;
+    letter-spacing: 0.14em;
   }
 
-  .label__v {
-    font-size: 10.5px;
-    color: var(--muted-2);
+  .band__v {
+    font-size: 10px;
+    color: var(--sub);
     text-align: right;
   }
 
@@ -120,23 +166,24 @@
     aspect-ratio: 1.35 / 1;
     display: grid;
     place-items: center;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: linear-gradient(180deg, #23232d, #17171f);
+    border-radius: 7px;
+    border: 1.6px solid var(--line);
+    background: var(--cell);
+    color: var(--ink);
     font-size: 21px;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
-    color: #e9e9ee;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
     transition: all 0.4s ease;
   }
 
   .ynum.is-match {
-    border-color: var(--gold);
-    background: linear-gradient(180deg, #fff2c2, #f5b301);
-    color: #2a1c00;
-    box-shadow: 0 0 0 2px rgba(245, 179, 1, 0.25),
-      0 8px 22px -8px rgba(245, 179, 1, 0.9);
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--match-a), var(--match-b));
+    color: var(--match-ink);
+    box-shadow: 0 0 0 2px rgba(245, 179, 1, 0.35),
+      0 8px 20px -8px rgba(245, 179, 1, 0.9);
     animation: pop 0.45s ease both;
   }
 
@@ -151,46 +198,53 @@
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    padding: 7px 9px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: #101017;
+    padding: 6px 9px;
+    border-radius: 7px;
+    border: 1.4px solid color-mix(in srgb, var(--line) 55%, transparent);
+    background: color-mix(in srgb, var(--cell) 75%, transparent);
   }
 
   .wnum__n {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
-    color: #fff;
+    color: var(--ink);
   }
 
   .wnum__p {
     font-size: 11px;
-    font-weight: 800;
-    color: var(--muted);
+    font-weight: 900;
+    color: var(--accent);
     white-space: nowrap;
   }
 
   .wnum.is-top {
-    border-color: rgba(245, 179, 1, 0.55);
-    background: linear-gradient(180deg, rgba(245, 179, 1, 0.16), rgba(245, 179, 1, 0.04));
-  }
-
-  .wnum.is-top .wnum__p {
-    color: var(--gold-2);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--cell));
   }
 
   .stamp {
     margin-top: auto;
     align-self: flex-start;
     padding: 4px 9px;
-    border: 1px dashed rgba(245, 179, 1, 0.5);
-    border-radius: 7px;
-    font-size: 9.5px;
+    border: 1.5px dashed var(--accent);
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .brandline {
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px dashed color-mix(in srgb, var(--line) 45%, transparent);
+    font-size: 9px;
     font-weight: 800;
-    letter-spacing: 0.1em;
-    color: var(--gold-2);
-    opacity: 0.85;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sub);
+    text-align: center;
   }
 
   /* ---- vela ---- */
@@ -205,28 +259,24 @@
     aspect-ratio: 1 / 1;
     display: grid;
     place-items: center;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: linear-gradient(180deg, #16232e, #0d151c);
+    border-radius: 9px;
+    border: 1.6px solid var(--line);
+    background: var(--cell);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
     transition: all 0.4s ease;
   }
 
   .sym__e {
     font-size: 30px;
     line-height: 1;
-    filter: saturate(1.05);
   }
 
   .sym.is-match {
-    border-color: var(--blue);
-    background: linear-gradient(180deg, #d9f4ff, #62c8f0);
-    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3),
-      0 10px 24px -10px rgba(56, 189, 248, 0.9);
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--match-a), var(--match-b));
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35),
+      0 10px 22px -10px rgba(56, 189, 248, 0.9);
     animation: pop 0.45s ease both;
-  }
-
-  .sym.is-match .sym__e {
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
   }
 
   .legend {
@@ -241,23 +291,13 @@
     align-items: center;
     gap: 5px;
     font-size: 10.5px;
-    font-weight: 700;
-    color: var(--muted);
+    font-weight: 800;
+    color: var(--sub);
     font-variant-numeric: tabular-nums;
   }
 
   .legend__i b {
     font-size: 14px;
     font-weight: 400;
-  }
-
-  .wave {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 26px;
-    background: linear-gradient(180deg, transparent, rgba(56, 189, 248, 0.14));
-    pointer-events: none;
   }
 </style>
