@@ -13,6 +13,18 @@
   const outcome = untrack(() => generateOutcome(ticket, { forceMirage }));
   let revealed = $state(false);
 
+  const isNumbers = $derived(ticket.id !== "vela");
+
+  // zone del tagliando da coprire con la grafica (monete / banconote)
+  const targets = $derived(
+    isNumbers
+      ? [
+          { selector: ".wnum", key: "winning" },
+          { selector: ".ynum", key: "yours" },
+        ]
+      : [{ selector: ".sym", key: "symbols" }]
+  );
+
   function handleComplete() {
     if (revealed) return;
     revealed = true;
@@ -42,6 +54,7 @@
       <ScratchSurface
         theme={ticket.theme}
         label="GRATTA QUI"
+        {targets}
         oncomplete={handleComplete}
       >
         <TicketArt {ticket} {outcome} />

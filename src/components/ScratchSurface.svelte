@@ -10,6 +10,7 @@
     theme = "silver",
     label = "GRATTA QUI",
     threshold = 0.55,
+    targets = null,
     disabled = false,
     onprogress,
     oncomplete,
@@ -55,7 +56,7 @@
     cells = new Uint8Array(cols * rows);
     marked = 0;
     progress = 0;
-    drawFoil();
+    drawFoil(sampleTargets());
     ready = true;
   }
 
@@ -243,69 +244,90 @@
     g.restore();
   }
 
-  function drawMoneyCover(w, h) {
-    const step = 82 * dpr;
+  function sampleTargets() {
+    if (!targets || !wrap) return null;
+    const base = wrap.getBoundingClientRect();
+    const out = { winning: [], yours: [], symbols: [] };
+    for (const grp of targets) {
+      const els = wrap.querySelectorAll(grp.selector);
+      els.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        (out[grp.key] || (out[grp.key] = [])).push({
+          x: (r.left - base.left) * dpr,
+          y: (r.top - base.top) * dpr,
+          w: r.width * dpr,
+          h: r.height * dpr,
+        });
+      });
+    }
+    return out;
+  }
+
+  // ---- copertine allineate al layout reale del tagliando ----
+  function coinTile(x, y, w, h) {
+    drawCoin(ctx, x + w / 2, y + h / 2, Math.min(w, h) * 0.5);
+  }
+
+  function banknoteTile(x, y, w, h) {
+    const bw = w * 0.94;
+    const bh = h * 0.52;
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    for (let i = -1; i <= 1; i++) {
+      drawBanknote(ctx, cx, cy + i * h * 0.14, bw, bh, i * 0.1);
+    }
+  }
+
+  function seaTile(x, y, w, h) {
+    const s = Math.min(w, h) * 0.34;
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const r = Math.random();
+    const rot = (Math.random() - 0.5) * 0.4;
+    if (r < 0.34) drawAnchor(ctx, cx, cy, s, rot);
+    else if (r < 0.64) drawSail(ctx, cx, cy, s, rot);
+    else if (r < 0.84)
+      drawStar(ctx, cx, cy, s * 0.7, rot, "rgba(255,255,255,0.92)");
+    else drawCoin(ctx, cx, cy, s * 0.8);
+  }
+
+  function scatterMoney(w, h) {
+    const step = 88 * dpr;
     for (let y = -step; y < h + step; y += step) {
       let col = 0;
       for (let x = -step; x < w + step; x += step) {
         const jx =
-          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.4;
-        const jy = y + (Math.random() - 0.5) * step * 0.4;
-        const top = jy < h * 0.45;
-        const r = Math.random();
-        if (top) {
-          if (r < 0.55)
-            drawDollar(
-              ctx,
-              jx,
-              jy,
-              step * 0.5 * (0.85 + Math.random() * 0.5),
-              (Math.random() - 0.5) * 0.5
-            );
-          else drawCoin(ctx, jx, jy, step * 0.3 * (0.8 + Math.random() * 0.4));
-        } else if (r < 0.5) {
-          drawCoin(ctx, jx, jy, step * 0.32 * (0.8 + Math.random() * 0.5));
-        } else if (r < 0.85) {
-          drawBanknote(
-            ctx,
-            jx,
-            jy,
-            step * 0.74,
-            step * 0.44,
-            (Math.random() - 0.5) * 0.6
-          );
-        } else {
-          drawDollar(ctx, jx, jy, step * 0.52, (Math.random() - 0.5) * 0.5);
-        }
+          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.5;
+        const jy = y + (Math.random() - 0.5) * step * 0.5;
+        if (Math.random() < 0.55)
+          drawDollar(ctx, jx, jy, step * 0.36, (Math.random() - 0.5) * 0.6);
+        else drawCoin(ctx, jx, jy, step * 0.17);
         col++;
       }
     }
   }
 
-  function drawSeaCover(w, h) {
-    for (let i = 0; i < 5; i++) {
-      drawWaveLine(ctx, h * (0.14 + i * 0.19), w, 5 * dpr, 6 * dpr, 0.28);
+  function drawMoneyCover(w, h, layout) {
+    scatterMoney(w, h);
+    for (const c of layout?.winning || []) coinTile(c.x, c.y, c.w, c.h);
+    for (const c of layout?.yours || []) banknoteTile(c.x, c.y, c.w, c.h);
+  }
+
+  function drawSeaCover(w, h, layout) {
+    for (let i = 0; i < 6; i++) {
+      drawWaveLine(ctx, h * (0.1 + i * 0.16), w, 5 * dpr, 6 * dpr, 0.26);
     }
-    const step = 104 * dpr;
-    for (let y = -step; y < h + step; y += step) {
-      let col = 0;
-      for (let x = -step; x < w + step; x += step) {
-        const jx =
-          x + (col % 2 ? step * 0.5 : 0) + (Math.random() - 0.5) * step * 0.4;
-        const jy = y + (Math.random() - 0.5) * step * 0.4;
-        const r = Math.random();
-        const rot = (Math.random() - 0.5) * 0.5;
-        if (r < 0.34) drawAnchor(ctx, jx, jy, step * 0.28, rot);
-        else if (r < 0.62) drawSail(ctx, jx, jy, step * 0.3, rot);
-        else if (r < 0.82)
-          drawStar(ctx, jx, jy, step * 0.16, rot, "rgba(255,255,255,0.85)");
-        else drawCoin(ctx, jx, jy, step * 0.22);
-        col++;
-      }
+    const cells = layout?.symbols || [];
+    if (!cells.length) {
+      const step = 104 * dpr;
+      for (let y = -step; y < h + step; y += step)
+        for (let x = -step; x < w + step; x += step) seaTile(x, y, step, step);
+    } else {
+      for (const c of cells) seaTile(c.x, c.y, c.w, c.h);
     }
   }
 
-  function drawFoil() {
+  function drawFoil(layout) {
     if (!ctx || !canvas) return;
     const w = canvas.width;
     const h = canvas.height;
@@ -323,8 +345,8 @@
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
 
-    if (pal.money) drawMoneyCover(w, h);
-    else drawSeaCover(w, h);
+    if (pal.money) drawMoneyCover(w, h, layout);
+    else drawSeaCover(w, h, layout);
 
     g.save();
     g.globalAlpha = 0.08;

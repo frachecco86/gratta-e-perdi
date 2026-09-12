@@ -13,7 +13,7 @@
       <span class="band__v">{ticket.mechanic}</span>
     </div>
 
-    <div class="ynums" style="--cols:{ticket.yoursCount > 6 ? 4 : 3}">
+    <div class="ynums" style="--cols:3">
       {#each outcome.yours as n (n)}
         <div class="ynum" class:is-match={outcome.matches.includes(n)}>
           {pad2(n)}
@@ -163,14 +163,14 @@
   }
 
   .ynum {
-    aspect-ratio: 1.35 / 1;
+    aspect-ratio: 1.55 / 1;
     display: grid;
     place-items: center;
     border-radius: 7px;
     border: 1.6px solid var(--line);
     background: var(--cell);
     color: var(--ink);
-    font-size: 21px;
+    font-size: 17px;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
