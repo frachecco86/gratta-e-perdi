@@ -1,5 +1,7 @@
 # Gratta & Perdi
 
+> 🌐 **Live:** <https://gratta-e-perdi.netlify.app> · 📦 **Repo:** <https://github.com/frachecco86/gratta-e-perdi>
+
 Web app satirica e **mobile-first** contro la ludopatia: un finto _Gratta e Vinci_
 con superficie grattabile (Canvas + pointer/touch), suoni sintetizzati via
 Web Audio e un "bilancio reale" che mostra quanto si sta perdendo davvero.
